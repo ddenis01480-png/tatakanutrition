@@ -1338,24 +1338,8 @@ function renderJ(){
         const showEmpty=qTrim.length<2;
         const showLocal=qTrim.length>=2;
 
-        // Bloc vide : récents + favoris
+        // Bloc vide : favoris uniquement
         html+=`<div id="empty-block-${meal.key}" style="display:${showEmpty?'':'none'}">`;
-        const recentFoods=getRecentFoods();
-        if(recentFoods.length>0){
-          html+=`<div style="border:1px solid #1c1c22;border-radius:6px;overflow:hidden;margin-bottom:8px">
-            <div style="padding:6px 12px;font-size:9px;color:#555;background:#0d0d10;letter-spacing:.1em;font-weight:700;border-bottom:1px solid #1c1c22">⏱ RÉCEMMENT UTILISÉS</div>`;
-          recentFoods.forEach(f=>{
-            const isFav=foodFavs.includes(f.id);
-            html+=`<div class="di" onclick="pickF('${meal.key}',${f.id})">
-              <div style="min-width:0;flex:1">
-                <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(f.name)}</div>
-                <div style="font-size:11px;color:#555;margin-top:2px">${f.kcal} kcal · ${f.prot}g P · ${f.carbs}g G · ${f.fat}g L</div>
-              </div>
-              <div style="color:${isFav?'#ffb800':'#2a2a35'};font-size:16px;margin-left:10px;flex-shrink:0">${isFav?'★':'☆'}</div>
-            </div>`;
-          });
-          html+=`</div>`;
-        }
         if(foodFavs.length>0){
           const favFoods=DB.filter(f=>foodFavs.includes(f.id));
           if(favFoods.length>0){
