@@ -2097,7 +2097,7 @@ function searchOFF(q,mealKey){
   if(drop)drop.innerHTML='<div style="padding:10px 12px;font-size:12px;color:#555;text-align:center">Recherche en cours…</div>';
   
   // API OpenFoodFacts v2 (compatible CORS navigateur)
-  var url='https://world.openfoodfacts.org/api/v2/search?search_terms='+encodeURIComponent(q)+'&page_size=15&fields=product_name,product_name_fr,nutriments,brands&sort_by=unique_scans_n';
+  var url='https://world.openfoodfacts.org/cgi/search.pl?search_terms='+encodeURIComponent(q)+'&search_simple=1&action=process&json=1&page_size=10&lc=fr&fields=product_name,product_name_fr,nutriments,brands,lang';
   
   fetch(url)
   .then(function(r){
@@ -2105,28 +2105,25 @@ function searchOFF(q,mealKey){
     return r.json();
   })
   .then(function(data){
-    console.log('OFF response:', JSON.stringify(data).substring(0,300));
     var hits=(data.hits||data.products||[]);
-    console.log('hits count:', hits.length);
     var results=hits
       .filter(function(p){
-        return (p.product_name_fr||p.product_name);
+        var n=p.nutriments||{};
+        return (p.product_name_fr||p.product_name)&&(n['energy-kcal_100g']||0)>0;
       })
       .map(function(p,i){
         var n=p.nutriments||{};
-        // energy-kcal_100g ou conversion depuis kJ
-        var kcal=n['energy-kcal_100g']||n['energy-kcal']||Math.round((n['energy_100g']||n['energy']||0)/4.184);
         return {
           id:90000+Date.now()%9999+i,
           name:(p.product_name_fr||p.product_name||'Produit').substring(0,60),
           cat:'En ligne',
-          kcal:Math.round(kcal),
-          prot:parseFloat((n.proteins_100g||n.proteins||0).toFixed(1)),
-          carbs:parseFloat((n.carbohydrates_100g||n.carbohydrates||0).toFixed(1)),
-          fat:parseFloat((n.fat_100g||n.fat||0).toFixed(1))
+          kcal:Math.round(n['energy-kcal_100g']||0),
+          prot:parseFloat((n.proteins_100g||0).toFixed(1)),
+          carbs:parseFloat((n.carbohydrates_100g||0).toFixed(1)),
+          fat:parseFloat((n.fat_100g||0).toFixed(1))
         };
       })
-      .filter(function(p){return p.kcal>0&&p.name.length>1;})
+      .filter(function(p){return p.kcal>0;})
       .slice(0,8);
     
     _offCache[mealKey]=results;
