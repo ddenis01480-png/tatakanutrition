@@ -2108,22 +2108,23 @@ function searchOFF(q,mealKey){
     var hits=(data.hits||data.products||[]);
     var results=hits
       .filter(function(p){
-        var n=p.nutriments||{};
-        return (p.product_name_fr||p.product_name)&&(n['energy-kcal_100g']||0)>0;
+        return (p.product_name_fr||p.product_name);
       })
       .map(function(p,i){
         var n=p.nutriments||{};
+        // energy-kcal_100g ou conversion depuis kJ
+        var kcal=n['energy-kcal_100g']||n['energy-kcal']||Math.round((n['energy_100g']||n['energy']||0)/4.184);
         return {
           id:90000+Date.now()%9999+i,
           name:(p.product_name_fr||p.product_name||'Produit').substring(0,60),
           cat:'En ligne',
-          kcal:Math.round(n['energy-kcal_100g']||0),
-          prot:parseFloat((n.proteins_100g||0).toFixed(1)),
-          carbs:parseFloat((n.carbohydrates_100g||0).toFixed(1)),
-          fat:parseFloat((n.fat_100g||0).toFixed(1))
+          kcal:Math.round(kcal),
+          prot:parseFloat((n.proteins_100g||n.proteins||0).toFixed(1)),
+          carbs:parseFloat((n.carbohydrates_100g||n.carbohydrates||0).toFixed(1)),
+          fat:parseFloat((n.fat_100g||n.fat||0).toFixed(1))
         };
       })
-      .filter(function(p){return p.kcal>0;})
+      .filter(function(p){return p.kcal>0&&p.name.length>1;})
       .slice(0,8);
     
     _offCache[mealKey]=results;
