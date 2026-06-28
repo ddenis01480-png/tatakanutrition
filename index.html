@@ -131,10 +131,13 @@ label{font-size:11px;color:#444;letter-spacing:.06em;display:block;margin-bottom
 
 <script>
 // ─── SERVICE WORKER ────────────────────────────────────────
-// À activer après déploiement sur Netlify avec sw.js présent
-if('serviceWorker' in navigator && location.protocol === 'https:'){
-  window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('sw.js').catch(()=>{});
+// Désinstalle tous les anciens service workers et vide leurs caches
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.getRegistrations().then(function(regs){
+    regs.forEach(function(r){ r.unregister(); });
+  });
+  caches.keys().then(function(keys){
+    keys.forEach(function(k){ caches.delete(k); });
   });
 }
 
