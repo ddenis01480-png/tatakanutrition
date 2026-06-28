@@ -2102,24 +2102,37 @@ function searchOFF(q,mealKey){
   }
 
   function processHits(data){
-    var hits=data.products||data.hits||[];
+    // Supabase retourne un array direct, OFF retourne {products:[]}
+    var hits=Array.isArray(data)?data:(data.products||data.hits||[]);
     var results=hits
-      .filter(function(p){ return p.product_name_fr||p.product_name; })
+      .filter(function(p){ return p.name_fr||p.product_name_fr||p.product_name; })
       .map(function(p,i){
+        if(p.name_fr){
+          // Format Supabase
+          return {
+            id:90000+Date.now()%9999+i,
+            name:p.name_fr.substring(0,60),
+            cat:'En ligne',
+            kcal:Math.round(p.kcal||0),
+            prot:parseFloat((p.prot||0).toFixed(1)),
+            carbs:parseFloat((p.carbs||0).toFixed(1)),
+            fat:parseFloat((p.fat||0).toFixed(1))
+          };
+        }
         var n=p.nutriments||{};
-        var kcal=n['energy-kcal_100g']||n['energy-kcal']||Math.round((n['energy_100g']||n['energy']||0)/4.184);
+        var kcal=n['energy-kcal_100g']||Math.round((n['energy_100g']||0)/4.184);
         return {
           id:90000+Date.now()%9999+i,
-          name:(p.product_name_fr||p.product_name||'Produit').substring(0,60),
+          name:(p.product_name_fr||p.product_name||'').substring(0,60),
           cat:'En ligne',
           kcal:Math.round(kcal),
-          prot:parseFloat((n.proteins_100g||n.proteins||0).toFixed(1)),
-          carbs:parseFloat((n.carbohydrates_100g||n.carbohydrates||0).toFixed(1)),
-          fat:parseFloat((n.fat_100g||n.fat||0).toFixed(1))
+          prot:parseFloat((n.proteins_100g||0).toFixed(1)),
+          carbs:parseFloat((n.carbohydrates_100g||0).toFixed(1)),
+          fat:parseFloat((n.fat_100g||0).toFixed(1))
         };
       })
-      .filter(function(p){ return p.kcal>0; })
-      .slice(0,8);
+      .filter(function(p){ return p.kcal>0&&p.name.length>1; })
+      .slice(0,10);
     return results;
   }
 
@@ -2145,16 +2158,16 @@ function searchOFF(q,mealKey){
   }
 
   // Proxy Vercel — évite les problèmes CORS/réseau avec OFF
-  var proxyUrl='/api/search?q='+encodeURIComponent(q);
-
-  doSearch(proxyUrl)
-    .then(function(data){
-      var results=processHits(data);
-      showResults(results);
-    })
+  // Recherche directe Supabase
+  var SUPA_URL='https://ogkrgsnnoebsvbgsngvm.supabase.co';
+  var SUPA_KEY='sb_publishable_KvM3k3gwBAArOFyUEd1a7A_oY0RTIom';
+  var supaUrl=SUPA_URL+'/rest/v1/aliments?name_fr=ilike.*'+encodeURIComponent(q)+'*&limit=10&select=name_fr,kcal,prot,carbs,fat';
+  fetch(supaUrl,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}})
+    .then(function(r){ if(!r.ok)throw new Error('HTTP '+r.status); return r.json(); })
+    .then(function(data){ showResults(processHits(data)); })
     .catch(function(){
       var drop=document.getElementById('drop-off-'+mealKey);
-      if(drop)drop.innerHTML='<div style="padding:10px 12px;font-size:12px;color:#e74c3c">Recherche web indisponible</div>';
+      if(drop)drop.innerHTML='<div style="padding:10px 12px;font-size:12px;color:#e74c3c">Recherche indisponible</div>';
     });
 }
 
