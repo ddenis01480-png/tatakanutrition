@@ -1,4 +1,4 @@
-const CACHE='tatanka-v39';
+const CACHE='tatanka-v40';
 const ASSETS=[
   '/',
   '/index.html',
