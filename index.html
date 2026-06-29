@@ -429,7 +429,34 @@ function showCelebration(){
   setTimeout(function(){if(el.parentNode)el.remove();},4000);
 }
 
-function saveJ(){ls.set(SK,journal);setTimeout(checkObjectifAtteint,300);}
+function saveJ(){
+  ls.set(SK,journal);
+  setTimeout(checkObjectifAtteint,300);
+  // Sync vers Supabase si connecté
+  if(supabase&&currentUser){
+    const d=date;
+    const dayData=journal[d];
+    if(dayData){
+      supabase.from('journal')
+        .upsert({user_id:currentUser.id,date:d,data:dayData,updated_at:new Date().toISOString()},{onConflict:'user_id,date'})
+        .then(function(r){if(r.error)console.warn('Sync journal:',r.error.message);});
+    }
+  }
+}
+
+async function loadJournalFromSupabase(){
+  if(!supabase||!currentUser)return;
+  const{data,error}=await supabase.from('journal').select('date,data').eq('user_id',currentUser.id);
+  if(error){console.warn('Load journal:',error.message);return;}
+  if(data&&data.length){
+    data.forEach(function(row){
+      // Supabase écrase local seulement si plus récent ou absent
+      if(!journal[row.date]){journal[row.date]=row.data;}
+    });
+    ls.set(SK,journal);
+    render();
+  }
+}
 function isOn(d){
   if(!profile||!profile.planning)return false;
   const dow=new Date(d+'T12:00:00').getDay();
@@ -579,6 +606,7 @@ function loadSupabase(){
         currentUser=session.user;
         await loadProfile(session.user.id,session.user.email);
         hideAuthScreen();
+        loadJournalFromSupabase();
         if(userProfile&&userProfile.blocked){
           document.getElementById('app').innerHTML='<div style="padding:40px;text-align:center;color:#e74c3c"><div style="font-size:32px;margin-bottom:12px">🚫</div><div style="font-weight:900">Compte suspendu</div></div>';
           return;
