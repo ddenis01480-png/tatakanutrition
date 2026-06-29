@@ -581,25 +581,20 @@ function initApp(){
   const safeguard=setTimeout(()=>{
     const splash=document.getElementById('splash');
     if(splash){splash.remove();}
-    try{render();}catch(e){console.error(e);}
+    // Si Supabase pas encore chargé, showAuthScreen s'en occupe
   },4000);
 
   startWaterReminderLoop();
   setTimeout(()=>{
     clearTimeout(safeguard);
     const nav=document.getElementById('nav');
-    if(nav) nav.style.display='none';
     const splash=document.getElementById('splash');
     if(splash){
       splash.style.transition='opacity .4s';
       splash.style.opacity='0';
       setTimeout(()=>{
         splash.remove(); // remove() au lieu de display:none — supprime vraiment le bloc
-        loadSupabase();
-        try{render();}catch(e){
-          console.error('render error:',e);
-          document.getElementById('app').innerHTML='<div style="padding:20px;color:#e74c3c">Erreur au chargement. Videz le cache et réessayez.</div>';
-        }
+        loadSupabase(); // render() déclenché par onAuthStateChange
       },420);
     } else {
       try{render();}catch(e){console.error(e);}
@@ -728,6 +723,8 @@ function showAuthScreen(){
 function hideAuthScreen(){
   var s=document.getElementById('auth-screen');
   if(s)s.style.display='none';
+  var nav=document.getElementById('nav');
+  if(nav)nav.style.display='';
 }
 
 async function doSignOut(){
