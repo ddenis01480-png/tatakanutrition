@@ -444,6 +444,15 @@ function saveJ(){
   }
 }
 
+async function loadProfileFromSupabase(){
+  if(!supabase||!currentUser)return;
+  const{data,error}=await supabase.from('profiles').select('prefs').eq('id',currentUser.id).single();
+  if(error||!data||!data.prefs)return;
+  profile=data.prefs;
+  ls.set('il_v2_p',profile);
+  render();
+}
+
 async function loadJournalFromSupabase(){
   if(!supabase||!currentUser)return;
   const{data,error}=await supabase.from('journal').select('date,data').eq('user_id',currentUser.id);
@@ -607,6 +616,7 @@ function loadSupabase(){
         await loadProfile(session.user.id,session.user.email);
         hideAuthScreen();
         loadJournalFromSupabase();
+        loadProfileFromSupabase();
         if(userProfile&&userProfile.blocked){
           document.getElementById('app').innerHTML='<div style="padding:40px;text-align:center;color:#e74c3c"><div style="font-size:32px;margin-bottom:12px">🚫</div><div style="font-weight:900">Compte suspendu</div></div>';
           return;
@@ -2263,6 +2273,13 @@ function saveManualMacros(){
 }
 function saveP(){
   _syncInputsToProfile();if(!profile)return;ls.set(PK,profile);render();
+  // Sync profil vers Supabase
+  if(supabase&&currentUser){
+    supabase.from('profiles')
+      .update({prefs:profile})
+      .eq('id',currentUser.id)
+      .then(function(r){if(r.error)console.warn('Sync profil:',r.error.message);});
+  }
   setTimeout(()=>{const b=document.getElementById('save-btn');if(b){b.textContent='✓ Sauvegardé!';b.style.background='#00b4d8';setTimeout(()=>{b.textContent='💾 Sauvegarder';b.style.background='';},1500);}},10);
 }
 function changeAdj(type,delta){if(type==='on')adj.adjOn=(adj.adjOn||0)+delta;else adj.adjOff=(adj.adjOff||0)+delta;ls.set(AK,adj);render();}
