@@ -15,7 +15,6 @@
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png"/>
 <title>Tatanka Nutrition</title>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window._supabaseReady=true;if(window._supabaseCallback)window._supabaseCallback();"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{background:#080809;color:#eee;font-family:system-ui,sans-serif;min-height:100vh;overscroll-behavior:none;-webkit-font-smoothing:antialiased}
@@ -92,33 +91,6 @@ label{font-size:11px;color:#444;letter-spacing:.06em;display:block;margin-bottom
 </style>
 </head>
 <body>
-
-<!-- AUTH SCREEN -->
-<div id="auth-screen" style="display:none;position:fixed;inset:0;background:#080809;z-index:2000;flex-direction:column;align-items:center;justify-content:center;padding:24px">
-  <div style="width:100%;max-width:380px">
-    <div style="text-align:center;margin-bottom:28px">
-      <img src="icon-192.png" style="width:100px;height:100px;border-radius:22px;margin-bottom:12px;box-shadow:0 0 20px rgba(46,204,113,0.3)"/>
-      <div style="font-size:20px;font-weight:900;letter-spacing:.1em">TATANKA <span style="color:#2ecc71">NUTRITION</span></div>
-    </div>
-    <div style="display:flex;border:1px solid #1c1c22;border-radius:6px;overflow:hidden;margin-bottom:16px">
-      <button onclick="switchAuthTab('login')" id="tab-login" style="flex:1;padding:10px;background:#2ecc71;border:none;color:#000;font-weight:900;font-size:13px;cursor:pointer">CONNEXION</button>
-      <button onclick="switchAuthTab('signup')" id="tab-signup" style="flex:1;padding:10px;background:#0c0c0f;border:none;color:#444;font-weight:900;font-size:13px;cursor:pointer">INSCRIPTION</button>
-    </div>
-    <div style="margin-bottom:12px">
-      <label style="font-size:11px;color:#555;letter-spacing:.06em;display:block;margin-bottom:4px">EMAIL</label>
-      <input id="auth-email" type="email" placeholder="ton@email.com" class="inp"/>
-    </div>
-    <div style="margin-bottom:16px">
-      <label style="font-size:11px;color:#555;letter-spacing:.06em;display:block;margin-bottom:4px">MOT DE PASSE</label>
-      <input id="auth-password" type="password" placeholder="••••••••" class="inp"/>
-    </div>
-    <div id="auth-error" style="color:#e74c3c;font-size:12px;margin-bottom:10px;display:none;text-align:center"></div>
-    <button onclick="doAuth()" class="btn" style="width:100%;font-size:14px;padding:12px;background:#2ecc71;color:#000" id="auth-btn">SE CONNECTER</button>
-    <div style="text-align:center;margin-top:12px">
-      <button onclick="doForgotPassword()" style="background:none;border:none;color:#444;font-size:12px;cursor:pointer;text-decoration:underline">Mot de passe oublié ?</button>
-    </div>
-  </div>
-</div>
 
 <!-- SPLASH -->
 <div id="splash" style="position:fixed;inset:0;background:#080809;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
@@ -430,56 +402,7 @@ function showCelebration(){
   setTimeout(function(){if(el.parentNode)el.remove();},4000);
 }
 
-function saveJ(){
-  ls.set(SK,journal);
-  setTimeout(checkObjectifAtteint,300);
-  // Sync vers Supabase si connecté
-  if(supabase&&currentUser){
-    const d=date;
-    const dayData=journal[d];
-    if(dayData){
-      supabase.from('journal')
-        .upsert({user_id:currentUser.id,date:d,data:dayData,updated_at:new Date().toISOString()},{onConflict:'user_id,date'})
-        .then(function(r){if(r.error)console.warn('Sync journal:',r.error.message);});
-    }
-  }
-}
-
-async function loadHistoriqueFromSupabase(){
-  if(!supabase||!currentUser)return;
-  const{data,error}=await supabase.from('historique').select('date,poids,mesures').eq('user_id',currentUser.id);
-  if(error||!data||!data.length)return;
-  data.forEach(function(row){
-    if(row.poids&&!weights[row.date])weights[row.date]=row.poids;
-    if(row.mesures&&!measures[row.date])measures[row.date]=row.mesures;
-  });
-  ls.set(WK,weights);
-  ls.set(MK,measures);
-  render();
-}
-
-async function loadProfileFromSupabase(){
-  if(!supabase||!currentUser)return;
-  const{data,error}=await supabase.from('profiles').select('prefs').eq('id',currentUser.id).single();
-  if(error||!data||!data.prefs)return;
-  profile=data.prefs;
-  ls.set('il_v2_p',profile);
-  render();
-}
-
-async function loadJournalFromSupabase(){
-  if(!supabase||!currentUser)return;
-  const{data,error}=await supabase.from('journal').select('date,data').eq('user_id',currentUser.id);
-  if(error){console.warn('Load journal:',error.message);return;}
-  if(data&&data.length){
-    data.forEach(function(row){
-      // Supabase écrase local seulement si plus récent ou absent
-      if(!journal[row.date]){journal[row.date]=row.data;}
-    });
-    ls.set(SK,journal);
-    render();
-  }
-}
+function saveJ(){ls.set(SK,journal);setTimeout(checkObjectifAtteint,300);}
 function isOn(d){
   if(!profile||!profile.planning)return false;
   const dow=new Date(d+'T12:00:00').getDay();
@@ -582,174 +505,29 @@ function initApp(){
   const safeguard=setTimeout(()=>{
     const splash=document.getElementById('splash');
     if(splash){splash.remove();}
-    // Si Supabase pas encore chargé, showAuthScreen s'en occupe
+    try{render();}catch(e){console.error(e);}
   },4000);
 
   startWaterReminderLoop();
   setTimeout(()=>{
     clearTimeout(safeguard);
     const nav=document.getElementById('nav');
+    if(nav) nav.style.display='none';
     const splash=document.getElementById('splash');
     if(splash){
       splash.style.transition='opacity .4s';
       splash.style.opacity='0';
       setTimeout(()=>{
         splash.remove(); // remove() au lieu de display:none — supprime vraiment le bloc
-        loadSupabase(); // render() déclenché par onAuthStateChange
-        // Fallback : si Supabase ne répond pas en 5s, afficher l'écran auth
-        setTimeout(function(){
-          if(!currentUser && document.getElementById('auth-screen') && document.getElementById('auth-screen').style.display!=='flex'){
-            showAuthScreen();
-          }
-          // Si déjà connecté mais render pas encore appelé, forcer
-          if(currentUser && document.getElementById('nav') && document.getElementById('nav').style.display==='none'){
-            hideAuthScreen();
-            try{render();}catch(e){console.error(e);}
-          }
-        },5000);
+        try{render();}catch(e){
+          console.error('render error:',e);
+          document.getElementById('app').innerHTML='<div style="padding:20px;color:#e74c3c">Erreur au chargement. Videz le cache et réessayez.</div>';
+        }
       },420);
     } else {
       try{render();}catch(e){console.error(e);}
     }
   },1800);
-}
-
-// ─── SUPABASE AUTH ─────────────────────────────────────────
-var _supaLoaded=false;
-var supabase=null;
-var currentUser=null;
-var userProfile=null;
-var _authMode='login';
-
-function _initSupabaseClient(){
-  var SUPA_URL='https://ogkrgsnnoebsvbgsngvm.supabase.co';
-  var SUPA_KEY='sb_publishable_KvM3k3gwBAArOFyUEd1a7A_oY0RTIom';
-  supabase=window.supabase.createClient(SUPA_URL,SUPA_KEY);
-    supabase.auth.onAuthStateChange(async function(event,session){
-      if(session&&session.user){
-        currentUser=session.user;
-        await loadProfile(session.user.id,session.user.email);
-        hideAuthScreen();
-        loadJournalFromSupabase();
-        loadProfileFromSupabase();
-        loadHistoriqueFromSupabase();
-        if(userProfile&&userProfile.blocked){
-          document.getElementById('app').innerHTML='<div style="padding:40px;text-align:center;color:#e74c3c"><div style="font-size:32px;margin-bottom:12px">🚫</div><div style="font-weight:900">Compte suspendu</div></div>';
-          return;
-        }
-        render();
-      } else {
-        currentUser=null;userProfile=null;
-        showAuthScreen();
-      }
-    });
-    supabase.auth.getSession().then(function(r){
-      if(!r.data.session)showAuthScreen();
-    });
-  };
-}
-
-function loadSupabase(){
-  if(_supaLoaded)return;
-  _supaLoaded=true;
-  if(window._supabaseReady||window.supabase){
-    _initSupabaseClient();
-  } else {
-    window._supabaseCallback=_initSupabaseClient;
-    // Fallback si script async pas encore chargé
-    setTimeout(function(){
-      if(window.supabase&&!supabase) _initSupabaseClient();
-      else if(!window.supabase) showAuthScreen(); // Supabase indispo
-    },3000);
-  }
-}
-
-function switchAuthTab(mode){
-  _authMode=mode;
-  var l=document.getElementById('tab-login');
-  var s=document.getElementById('tab-signup');
-  var b=document.getElementById('auth-btn');
-  if(mode==='login'){
-    l.style.background='#2ecc71';l.style.color='#000';
-    s.style.background='#0c0c0f';s.style.color='#444';
-    b.textContent='SE CONNECTER';
-  } else {
-    s.style.background='#2ecc71';s.style.color='#000';
-    l.style.background='#0c0c0f';l.style.color='#444';
-    b.textContent='CRÉER MON COMPTE';
-  }
-  document.getElementById('auth-error').style.display='none';
-}
-
-async function doAuth(){
-  if(!supabase)return;
-  var email=document.getElementById('auth-email').value.trim();
-  var password=document.getElementById('auth-password').value;
-  var errEl=document.getElementById('auth-error');
-  var btn=document.getElementById('auth-btn');
-  errEl.style.display='none';
-  if(!email||!password){errEl.textContent='Email et mot de passe requis';errEl.style.display='block';return;}
-  btn.textContent='...';btn.disabled=true;
-  try{
-    var result=_authMode==='login'
-      ? await supabase.auth.signInWithPassword({email,password})
-      : await supabase.auth.signUp({email,password});
-    if(result.error){
-      var msg=result.error.message;
-      if(msg.includes('Invalid login'))msg='Email ou mot de passe incorrect';
-      if(msg.includes('already registered'))msg='Email déjà utilisé — connecte-toi';
-      if(msg.includes('Password'))msg='Mot de passe trop court (6 min)';
-      errEl.textContent=msg;errEl.style.display='block';
-    } else if(_authMode==='signup'&&!result.data.session){
-      errEl.style.color='#2ecc71';
-      errEl.textContent='Vérifie ton email pour confirmer ton compte';
-      errEl.style.display='block';
-    }
-  }catch(e){errEl.textContent='Erreur réseau';errEl.style.display='block';}
-  btn.disabled=false;
-  btn.textContent=_authMode==='login'?'SE CONNECTER':'CRÉER MON COMPTE';
-}
-
-async function doForgotPassword(){
-  if(!supabase)return;
-  var email=document.getElementById('auth-email').value.trim();
-  var errEl=document.getElementById('auth-error');
-  if(!email){errEl.textContent="Entre ton email d'abord";errEl.style.display='block';return;}
-  await supabase.auth.resetPasswordForEmail(email);
-  errEl.style.color='#2ecc71';errEl.textContent='Email envoyé !';errEl.style.display='block';
-}
-
-async function loadProfile(userId,email){
-  if(!supabase)return;
-  var r=await supabase.from('profiles').select('*').eq('id',userId).single();
-  if(!r.data){
-    await supabase.from('profiles').insert({id:userId,email:email,premium:false,lifetime:false,blocked:false});
-    userProfile={premium:false,lifetime:false,blocked:false};
-  } else {
-    userProfile=r.data;
-  }
-}
-
-function isPremium(){
-  if(!userProfile)return false;
-  if(userProfile.blocked)return false;
-  return userProfile.premium||userProfile.lifetime;
-}
-
-function showAuthScreen(){
-  var s=document.getElementById('auth-screen');
-  if(s)s.style.display='flex';
-  document.getElementById('nav').style.display='none';
-}
-function hideAuthScreen(){
-  var s=document.getElementById('auth-screen');
-  if(s)s.style.display='none';
-  var nav=document.getElementById('nav');
-  if(nav)nav.style.display='';
-}
-
-async function doSignOut(){
-  if(supabase)await supabase.auth.signOut();
 }
 
 function showOnboarding(){
@@ -1609,7 +1387,13 @@ function renderJ(){
         // Résultats locaux (mis à jour par _updateLocalResults)
         html+=`<div id="local-results-${meal.key}" style="border:1px solid #1c1c22;border-radius:6px;overflow:hidden;margin-bottom:8px;display:${showLocal?'':'none'}"></div>`;
 
-        // Résultats web injectés directement dans local-results par searchOFF
+        // Résultats web
+        html+=`<div id="web-block-${meal.key}" style="border:1px solid #1c2a1c;border-radius:6px;overflow:hidden;display:${showLocal?'':'none'}">
+          <div style="padding:6px 12px;font-size:9px;color:#2ecc71;background:#0a140a;letter-spacing:.1em;font-weight:700;border-bottom:1px solid #1c2a1c">🌐 RECHERCHE WEB (Supabase)</div>
+          <div id="drop-off-${meal.key}" style="min-height:36px">
+            <div style="padding:10px 12px;font-size:12px;color:#555">Recherche en cours…</div>
+          </div>
+        </div>`;
       } // fin else
 
       html+=`</div>`; // fin bloc recherche
@@ -1982,12 +1766,6 @@ function saveMeasure(ds,field,val){
   if(!measures[ds])measures[ds]={tour:'',mg:'',cou:'',hip:''};
   if(field==='poids'){if(val&&+val>0)weights[ds]=+val;else delete weights[ds];ls.set(WK,weights);}
   else{measures[ds][field]=val&&+val>0?+val:'';ls.set(MK,measures);}
-  // Sync vers Supabase
-  if(supabase&&currentUser){
-    supabase.from('historique')
-      .upsert({user_id:currentUser.id,date:ds,poids:weights[ds]||null,mesures:measures[ds]||null,updated_at:new Date().toISOString()},{onConflict:'user_id,date'})
-      .then(function(r){if(r.error)console.warn('Sync historique:',r.error.message);});
-  }
 }
 function saveNote(ds,val){
   notes[ds]=val;
@@ -2134,8 +1912,7 @@ function renderP(){
         ${DAYS_LBL.map((d,i)=>`<button class="day-btn ${p.planning[i]?'on':''}" onclick="togDayP(${i})">${d}</button>`).join('')}
       </div>
     </div>
-    <button class="btn" id="save-btn" style="width:100%;margin-bottom:8px" onclick="saveP()">💾 Sauvegarder</button>
-    <button onclick="doSignOut()" style="width:100%;background:none;border:1px solid #e74c3c;border-radius:4px;color:#e74c3c;padding:10px;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px">🚪 Se déconnecter</button>
+    <button class="btn" id="save-btn" style="width:100%;margin-bottom:0" onclick="saveP()">💾 Sauvegarder</button>
   </div>`;
 
   // Mode manuel
@@ -2170,7 +1947,6 @@ function renderP(){
   </div>`;
 
   if(m){
-    if(isPremium()){
     html+=`<div class="card">
       <div class="ct">Ajustement calories <span style="color:#ffd60a;font-size:9px">GLUCIDES UNIQUEMENT</span></div>
       <div style="font-size:10px;color:#444;margin-bottom:14px">Protéines et lipides fixes. Paliers de 100 kcal.</div>
@@ -2224,14 +2000,6 @@ function renderP(){
           <div style="font-size:9px;color:${c}44">${s}</div>
         </div>`).join('')}
       </div>
-    </div>`;
-  } else {
-    // Utilisateur gratuit — bannière d'upgrade
-    html+=`<div class="card" style="border:1px solid #9b59b633;background:#0d0010;text-align:center;padding:20px">
-      <div style="font-size:28px;margin-bottom:8px">👑</div>
-      <div style="font-size:14px;font-weight:900;color:#9b59b6;margin-bottom:6px">FEATURE PREMIUM</div>
-      <div style="font-size:11px;color:#555;margin-bottom:14px;line-height:1.6">Macros adaptées jour d'entraînement / jour de repos selon ton planning. Calcul automatique glucides cycliques.</div>
-      <div style="font-size:11px;color:#9b59b6;font-weight:700">🔒 Disponible avec l'abonnement Premium</div>
     </div>`;
   }
   return html;
@@ -2314,13 +2082,6 @@ function saveManualMacros(){
 }
 function saveP(){
   _syncInputsToProfile();if(!profile)return;ls.set(PK,profile);render();
-  // Sync profil vers Supabase
-  if(supabase&&currentUser){
-    supabase.from('profiles')
-      .update({prefs:profile})
-      .eq('id',currentUser.id)
-      .then(function(r){if(r.error)console.warn('Sync profil:',r.error.message);});
-  }
   setTimeout(()=>{const b=document.getElementById('save-btn');if(b){b.textContent='✓ Sauvegardé!';b.style.background='#00b4d8';setTimeout(()=>{b.textContent='💾 Sauvegarder';b.style.background='';},1500);}},10);
 }
 function changeAdj(type,delta){if(type==='on')adj.adjOn=(adj.adjOn||0)+delta;else adj.adjOff=(adj.adjOff||0)+delta;ls.set(AK,adj);render();}
@@ -2335,41 +2096,82 @@ var _searchTimer=null;
 
 function searchOFF(q,mealKey){
   if(!q||q.length<2)return;
+  var drop=document.getElementById('drop-off-'+mealKey);
+  if(drop)drop.innerHTML='<div style="padding:10px 12px;font-size:12px;color:#555;text-align:center">Recherche en cours…</div>';
+
+  function doSearch(url){
+    return fetch(url,{headers:{'Accept':'application/json'}})
+      .then(function(r){ if(!r.ok)throw new Error('HTTP '+r.status); return r.json(); });
+  }
+
+  function processHits(data){
+    // Supabase retourne un array direct, OFF retourne {products:[]}
+    var hits=Array.isArray(data)?data:(data.products||data.hits||[]);
+    var results=hits
+      .filter(function(p){ return p.name_fr||p.product_name_fr||p.product_name; })
+      .map(function(p,i){
+        if(p.name_fr){
+          // Format Supabase
+          return {
+            id:90000+Date.now()%9999+i,
+            name:p.name_fr.substring(0,60),
+            cat:'En ligne',
+            kcal:Math.round(p.kcal||0),
+            prot:parseFloat((p.prot||0).toFixed(1)),
+            carbs:parseFloat((p.carbs||0).toFixed(1)),
+            fat:parseFloat((p.fat||0).toFixed(1))
+          };
+        }
+        var n=p.nutriments||{};
+        var kcal=n['energy-kcal_100g']||Math.round((n['energy_100g']||0)/4.184);
+        return {
+          id:90000+Date.now()%9999+i,
+          name:(p.product_name_fr||p.product_name||'').substring(0,60),
+          cat:'En ligne',
+          kcal:Math.round(kcal),
+          prot:parseFloat((n.proteins_100g||0).toFixed(1)),
+          carbs:parseFloat((n.carbohydrates_100g||0).toFixed(1)),
+          fat:parseFloat((n.fat_100g||0).toFixed(1))
+        };
+      })
+      .filter(function(p){ return p.kcal>0&&p.name.length>1; })
+      .slice(0,10);
+    return results;
+  }
+
+  function showResults(results){
+    _offCache[mealKey]=results;
+    var drop=document.getElementById('drop-off-'+mealKey);
+    if(!drop)return;
+    if(!results.length){
+      drop.innerHTML='<div style="padding:10px 12px;font-size:12px;color:#444">Aucun résultat trouvé sur OpenFoodFacts</div>';
+      return;
+    }
+    var html='';
+    results.forEach(function(f,i){
+      _offCache[mealKey+'_'+i]=f;
+      var ck='offitem-'+mealKey+'-'+i;
+      html+='<div class="di" id="'+ck+'"><div style="min-width:0;flex:1"><div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(f.name)+'</div><div style="font-size:11px;color:#444;margin-top:2px">'+f.kcal+' kcal · '+f.prot+'g P · '+f.carbs+'g G · '+f.fat+'g L</div></div><div style="color:#2ecc71;font-size:10px;font-weight:700;margin-left:10px;flex-shrink:0">WEB</div></div>';
+    });
+    drop.innerHTML=html;
+    results.forEach(function(f,i){
+      var el=document.getElementById('offitem-'+mealKey+'-'+i);
+      if(el)(function(mk,idx){ el.addEventListener('click',function(){pickOFFItem(mk,idx);}); })(mealKey,i);
+    });
+  }
+
+  // Proxy Vercel — évite les problèmes CORS/réseau avec OFF
+  // Recherche directe Supabase
   var SUPA_URL='https://ogkrgsnnoebsvbgsngvm.supabase.co';
   var SUPA_KEY='sb_publishable_KvM3k3gwBAArOFyUEd1a7A_oY0RTIom';
-  var supaUrl=SUPA_URL+'/rest/v1/aliments?name_fr=ilike.*'+encodeURIComponent(q)+'*&limit=20&select=name_fr,kcal,prot,carbs,fat,cat';
+  var supaUrl=SUPA_URL+'/rest/v1/aliments?name_fr=ilike.*'+encodeURIComponent(q)+'*&limit=10&select=name_fr,kcal,prot,carbs,fat';
   fetch(supaUrl,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}})
-    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
-    .then(function(data){
-      _offCache[mealKey]=[];
-      // Fusionner avec résultats locaux déjà affichés
-      var localDiv=document.getElementById('local-results-'+mealKey);
-      if(!localDiv)return;
-      // Récupérer noms locaux déjà affichés pour éviter doublons
-      var localNames=DB.filter(function(f){return norm(f.name).includes(norm(q));}).map(function(f){return norm(f.name);});
-      var webItems=data.filter(function(p){return p.name_fr&&p.kcal>0;})
-        .filter(function(p){return !localNames.includes(norm(p.name_fr));})
-        .slice(0,8);
-      if(!webItems.length)return;
-      // Ajouter section web à la suite de la liste locale
-      var webHtml='';
-      webItems.forEach(function(p,i){
-        _offCache[mealKey+'_'+i]=p;
-        _offCache[mealKey].push(p);
-        var kcal=Math.round(p.kcal||0);
-        var prot=parseFloat((p.prot||0).toFixed(1));
-        var carbs=parseFloat((p.carbs||0).toFixed(1));
-        var fat=parseFloat((p.fat||0).toFixed(1));
-        var name=p.name_fr.substring(0,60);
-        webHtml+='<div class="di" id="offitem-'+mealKey+'-'+i+'"><div style="min-width:0;flex:1"><div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(name)+'</div><div style="font-size:11px;color:#444;margin-top:2px">'+kcal+' kcal · '+prot+'g P · '+carbs+'g G · '+fat+'g L</div></div></div>';
-      });
-      localDiv.innerHTML=localDiv.innerHTML+webHtml;
-      webItems.forEach(function(p,i){
-        var el=document.getElementById('offitem-'+mealKey+'-'+i);
-        if(el)(function(mk,idx){el.addEventListener('click',function(){pickOFFItem(mk,idx);});})(mealKey,i);
-      });
-    })
-    .catch(function(){});
+    .then(function(r){ if(!r.ok)throw new Error('HTTP '+r.status); return r.json(); })
+    .then(function(data){ showResults(processHits(data)); })
+    .catch(function(){
+      var drop=document.getElementById('drop-off-'+mealKey);
+      if(drop)drop.innerHTML='<div style="padding:10px 12px;font-size:12px;color:#e74c3c">Recherche indisponible</div>';
+    });
 }
 
 function pickOFFItem(mealKey,idx){
@@ -2469,8 +2271,8 @@ function _updateLocalResults(k){
       localDiv.style.display='';
       localDiv.innerHTML=`<div style="padding:10px 12px;font-size:12px;color:#444">Aucun résultat local pour « ${esc(q)} »</div>`;
     }
-    // Bloc web caché — résultats Supabase injectés directement dans la liste
-    if(webBlock)webBlock.style.display='none';
+    // Montrer bloc web
+    if(webBlock)webBlock.style.display='';
   }
 }
 function pickF(k,id){
