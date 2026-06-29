@@ -15,6 +15,7 @@
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png"/>
 <title>Tatanka Nutrition</title>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script async src="https://js.stripe.com/v3/"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{background:#080809;color:#eee;font-family:system-ui,sans-serif;min-height:100vh;overscroll-behavior:none;-webkit-font-smoothing:antialiased}
@@ -690,6 +691,62 @@ function _syncAllFromSupabase(){
   supabase.from('profiles').select('prefs').eq('id',currentUser.id).single().then(function(r){
     if(r.data&&r.data.prefs){profile=r.data.prefs;ls.set(PK,profile);render();}
   });
+}
+
+// ─── STRIPE ────────────────────────────────────────────────
+var STRIPE_PK='pk_test_51TnhogPCt6A1TSgNIw54p3NKfguadj6EcqihEQ16lB0IlJdwYsSimIlDM4FdnX54DQAYxcnDJVQyWAZsd3kA9cfw0099fm6OfQ';
+var PRICE_MONTHLY='price_1Tni34PCt6A1TSgNL3DLo2q2';
+var PRICE_YEARLY='price_1Tni5YPCt6A1TSgNdgLmX83u';
+
+async function startCheckout(priceId){
+  if(!currentUser){
+    toast('Connecte-toi d'abord','#e74c3c');
+    return;
+  }
+  if(!window.Stripe){
+    toast('Stripe non disponible','#e74c3c');
+    return;
+  }
+  try{
+    // Créer une session Checkout via Supabase Edge Function (à implémenter)
+    // Pour l'instant : redirection vers Stripe Payment Link
+    var urls={
+      [PRICE_MONTHLY]:'https://buy.stripe.com/test_monthly',
+      [PRICE_YEARLY]:'https://buy.stripe.com/test_yearly'
+    };
+    // On utilise Stripe Checkout directement
+    var stripe=window.Stripe(STRIPE_PK);
+    stripe.redirectToCheckout({
+      lineItems:[{price:priceId,quantity:1}],
+      mode:'subscription',
+      successUrl:window.location.origin+'/?payment=success',
+      cancelUrl:window.location.origin+'/?payment=cancel',
+      customerEmail:currentUser.email
+    }).then(function(r){
+      if(r.error)toast(r.error.message,'#e74c3c');
+    });
+  }catch(e){
+    toast('Erreur paiement: '+e.message,'#e74c3c');
+  }
+}
+
+function renderPremiumOffer(){
+  return `<div class="card" style="border:1px solid #2ecc7133;background:#060e06">
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="font-size:28px;margin-bottom:6px">👑</div>
+      <div style="font-size:15px;font-weight:900;color:#2ecc71">PASSER PREMIUM</div>
+      <div style="font-size:11px;color:#555;margin-top:4px">Macros adaptées entraînement / repos</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button onclick="startCheckout('${PRICE_MONTHLY}')" style="flex:1;background:#2ecc71;color:#000;border:none;border-radius:6px;padding:12px 8px;font-weight:900;font-size:13px;cursor:pointer">
+        4,99€<br><span style="font-size:10px;font-weight:400">/ mois</span>
+      </button>
+      <button onclick="startCheckout('${PRICE_YEARLY}')" style="flex:1;background:#1a6e3e;color:#2ecc71;border:1px solid #2ecc71;border-radius:6px;padding:12px 8px;font-weight:900;font-size:13px;cursor:pointer">
+        39,99€<br><span style="font-size:10px;font-weight:400">/ an (-33%)</span>
+      </button>
+    </div>
+    <div style="font-size:10px;color:#333;text-align:center">Résiliation à tout moment</div>
+  </div>`;
 }
 
 function showOnboarding(){
@@ -2074,6 +2131,7 @@ function renderP(){
         ${DAYS_LBL.map((d,i)=>`<button class="day-btn ${p.planning[i]?'on':''}" onclick="togDayP(${i})">${d}</button>`).join('')}
       </div>
     </div>
+    ${!isPremium()?renderPremiumOffer():'<div style="text-align:center;padding:10px;font-size:11px;color:#2ecc71;font-weight:700">👑 PREMIUM ACTIF</div>'}
     <button class="btn" id="save-btn" style="width:100%;margin-bottom:8px" onclick="saveP()">💾 Sauvegarder</button>
     <button onclick="doSignOut()" style="width:100%;background:none;border:1px solid #e74c3c;border-radius:4px;color:#e74c3c;padding:10px;font-size:13px;font-weight:700;cursor:pointer">🚪 Se déconnecter</button>
   </div>`;
