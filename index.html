@@ -444,6 +444,19 @@ function saveJ(){
   }
 }
 
+async function loadHistoriqueFromSupabase(){
+  if(!supabase||!currentUser)return;
+  const{data,error}=await supabase.from('historique').select('date,poids,mesures').eq('user_id',currentUser.id);
+  if(error||!data||!data.length)return;
+  data.forEach(function(row){
+    if(row.poids&&!weights[row.date])weights[row.date]=row.poids;
+    if(row.mesures&&!measures[row.date])measures[row.date]=row.mesures;
+  });
+  ls.set(WK,weights);
+  ls.set(MK,measures);
+  render();
+}
+
 async function loadProfileFromSupabase(){
   if(!supabase||!currentUser)return;
   const{data,error}=await supabase.from('profiles').select('prefs').eq('id',currentUser.id).single();
@@ -617,6 +630,7 @@ function loadSupabase(){
         hideAuthScreen();
         loadJournalFromSupabase();
         loadProfileFromSupabase();
+        loadHistoriqueFromSupabase();
         if(userProfile&&userProfile.blocked){
           document.getElementById('app').innerHTML='<div style="padding:40px;text-align:center;color:#e74c3c"><div style="font-size:32px;margin-bottom:12px">🚫</div><div style="font-weight:900">Compte suspendu</div></div>';
           return;
@@ -1956,6 +1970,12 @@ function saveMeasure(ds,field,val){
   if(!measures[ds])measures[ds]={tour:'',mg:'',cou:'',hip:''};
   if(field==='poids'){if(val&&+val>0)weights[ds]=+val;else delete weights[ds];ls.set(WK,weights);}
   else{measures[ds][field]=val&&+val>0?+val:'';ls.set(MK,measures);}
+  // Sync vers Supabase
+  if(supabase&&currentUser){
+    supabase.from('historique')
+      .upsert({user_id:currentUser.id,date:ds,poids:weights[ds]||null,mesures:measures[ds]||null,updated_at:new Date().toISOString()},{onConflict:'user_id,date'})
+      .then(function(r){if(r.error)console.warn('Sync historique:',r.error.message);});
+  }
 }
 function saveNote(ds,val){
   notes[ds]=val;
