@@ -15,6 +15,7 @@
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png"/>
 <title>Tatanka Nutrition</title>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window._supabaseReady=true;if(window._supabaseCallback)window._supabaseCallback();"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{background:#080809;color:#eee;font-family:system-ui,sans-serif;min-height:100vh;overscroll-behavior:none;-webkit-font-smoothing:antialiased}
@@ -595,6 +596,17 @@ function initApp(){
       setTimeout(()=>{
         splash.remove(); // remove() au lieu de display:none — supprime vraiment le bloc
         loadSupabase(); // render() déclenché par onAuthStateChange
+        // Fallback : si Supabase ne répond pas en 5s, afficher l'écran auth
+        setTimeout(function(){
+          if(!currentUser && document.getElementById('auth-screen') && document.getElementById('auth-screen').style.display!=='flex'){
+            showAuthScreen();
+          }
+          // Si déjà connecté mais render pas encore appelé, forcer
+          if(currentUser && document.getElementById('nav') && document.getElementById('nav').style.display==='none'){
+            hideAuthScreen();
+            try{render();}catch(e){console.error(e);}
+          }
+        },5000);
       },420);
     } else {
       try{render();}catch(e){console.error(e);}
@@ -609,15 +621,10 @@ var currentUser=null;
 var userProfile=null;
 var _authMode='login';
 
-function loadSupabase(){
-  if(_supaLoaded)return;
-  _supaLoaded=true;
-  var s=document.createElement('script');
-  s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-  s.onload=function(){
-    var SUPA_URL='https://ogkrgsnnoebsvbgsngvm.supabase.co';
-    var SUPA_KEY='sb_publishable_KvM3k3gwBAArOFyUEd1a7A_oY0RTIom';
-    supabase=window.supabase.createClient(SUPA_URL,SUPA_KEY);
+function _initSupabaseClient(){
+  var SUPA_URL='https://ogkrgsnnoebsvbgsngvm.supabase.co';
+  var SUPA_KEY='sb_publishable_KvM3k3gwBAArOFyUEd1a7A_oY0RTIom';
+  supabase=window.supabase.createClient(SUPA_URL,SUPA_KEY);
     supabase.auth.onAuthStateChange(async function(event,session){
       if(session&&session.user){
         currentUser=session.user;
@@ -640,7 +647,21 @@ function loadSupabase(){
       if(!r.data.session)showAuthScreen();
     });
   };
-  document.head.appendChild(s);
+}
+
+function loadSupabase(){
+  if(_supaLoaded)return;
+  _supaLoaded=true;
+  if(window._supabaseReady||window.supabase){
+    _initSupabaseClient();
+  } else {
+    window._supabaseCallback=_initSupabaseClient;
+    // Fallback si script async pas encore chargé
+    setTimeout(function(){
+      if(window.supabase&&!supabase) _initSupabaseClient();
+      else if(!window.supabase) showAuthScreen(); // Supabase indispo
+    },3000);
+  }
 }
 
 function switchAuthTab(mode){
