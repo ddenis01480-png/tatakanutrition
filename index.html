@@ -2325,7 +2325,7 @@ function searchOFF(q,mealKey){
         .slice(0,8);
       if(!webItems.length)return;
       // Ajouter section web à la suite de la liste locale
-      var webHtml='<div style="padding:6px 12px;font-size:9px;color:#2ecc71;background:#0a140a;letter-spacing:.1em;font-weight:700;border-bottom:1px solid #1c2a1c;border-top:1px solid #1c1c22">🌐 SUPABASE</div>';
+      var webHtml='';
       webItems.forEach(function(p,i){
         _offCache[mealKey+'_'+i]=p;
         _offCache[mealKey].push(p);
