@@ -588,6 +588,10 @@ function initSupabase(){
           }
           _hideAuth();
           _syncAllFromSupabase();
+          // Retour depuis Stripe après paiement réussi
+          if(window.location.search.includes('payment=success')){
+            _activatePremium();
+          }
           render();
         } else {
           currentUser=null; userProfile=null;
@@ -707,6 +711,16 @@ function startCheckout(plan){
   // Pré-remplir l'email + transmettre l'user_id en référence client
   url+='?prefilled_email='+encodeURIComponent(currentUser.email)+'&client_reference_id='+currentUser.id;
   window.location.href=url;
+}
+
+async function _activatePremium(){
+  if(!supabase||!currentUser)return;
+  await supabase.from('profiles').update({premium:true}).eq('id',currentUser.id);
+  if(userProfile)userProfile.premium=true;
+  // Nettoyer l'URL
+  window.history.replaceState({},'',window.location.pathname);
+  toast('👑 Premium activé ! Bienvenue !','#2ecc71');
+  render();
 }
 
 function fillPremiumZone(){
