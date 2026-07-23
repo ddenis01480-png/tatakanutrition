@@ -724,6 +724,17 @@ async function _activatePremium(){
 }
 
 function fillPremiumZone(){
+  // Injecter boutons dans la bannière premium du profil si visible
+  var cta=document.getElementById('premium-cta');
+  if(cta&&!isPremium()){
+    cta.innerHTML='';
+    var box=document.createElement('div');
+    box.style.cssText='display:flex;gap:8px';
+    box.innerHTML='<button id="cta-monthly" style="flex:1;background:#9b59b6;color:#fff;border:none;border-radius:6px;padding:10px 6px;font-weight:900;font-size:12px;cursor:pointer">4,99€/mois</button><button id="cta-yearly" style="flex:1;background:#6c3483;color:#fff;border:none;border-radius:6px;padding:10px 6px;font-weight:900;font-size:12px;cursor:pointer">39,99€/an</button>';
+    cta.appendChild(box);
+    document.getElementById('cta-monthly').addEventListener('click',function(){startCheckout('monthly');});
+    document.getElementById('cta-yearly').addEventListener('click',function(){startCheckout('yearly');});
+  }
   var zone=document.getElementById('premium-zone');
   if(!zone)return;
   if(isPremium()){
@@ -2159,6 +2170,14 @@ function renderP(){
   </div>`;
 
   if(m){
+    if(!isPremium()){
+      html+=`<div class="card" style="border:1px solid #9b59b633;background:#0d0010;text-align:center;padding:24px">
+        <div style="font-size:32px;margin-bottom:8px">👑</div>
+        <div style="font-size:14px;font-weight:900;color:#9b59b6;margin-bottom:8px">FEATURE PREMIUM</div>
+        <div style="font-size:11px;color:#555;line-height:1.7;margin-bottom:16px">Macros adaptées automatiquement selon ton planning :<br>🔥 Jour training vs ❄️ Jour repos.<br>Glucides cycliques hebdo.</div>
+        <div id="premium-cta"></div>
+      </div>`;
+    } else {
     html+=`<div class="card">
       <div class="ct">Ajustement calories <span style="color:#ffd60a;font-size:9px">GLUCIDES UNIQUEMENT</span></div>
       <div style="font-size:10px;color:#444;margin-bottom:14px">Protéines et lipides fixes. Paliers de 100 kcal.</div>
@@ -2213,6 +2232,7 @@ function renderP(){
         </div>`).join('')}
       </div>
     </div>`;
+    } // fin isPremium
   }
   return html;
 }
