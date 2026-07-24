@@ -1746,8 +1746,10 @@ let histoRange=14; // nombre de jours affichés
 
 function renderH(){
   const m=profile?calcMacros(profile):null;
+  // Gratuit = 30 jours max
+  const maxRange=isPremium()?histoRange:Math.min(histoRange,30);
   const days=[];
-  for(let i=0;i<histoRange;i++){
+  for(let i=0;i<maxRange;i++){
     const d=new Date();d.setDate(d.getDate()-i);
     const ds=d.toISOString().slice(0,10);
     const tot=totals(ds);const on=isOn(ds);
@@ -1767,6 +1769,7 @@ function renderH(){
     <div style="font-size:20px;font-weight:900">HISTORIQUE <span style="color:#ff4c00">${histoRange}J</span></div>
     <div style="display:flex;gap:6px">
       ${[14,30,60].map(n=>`<button onclick="histoRange=${n};render()" style="background:${histoRange===n?'#ff4c00':'none'};border:1px solid ${histoRange===n?'#ff4c00':'#1c1c22'};border-radius:4px;color:${histoRange===n?'#fff':'#555'};padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer">${n}j</button>`).join('')}
+    ${!isPremium()?'<div style="font-size:9px;color:#9b59b6;margin-top:4px">👑 Premium : historique illimité</div>':''}
     </div>
   </div>`;
 
