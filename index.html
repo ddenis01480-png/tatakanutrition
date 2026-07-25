@@ -842,43 +842,53 @@ function startHtml5Qr(){
   });
 }
 
-function fetchOFF(barcode){
+function _showScanResult(food){
   var status=document.getElementById('scanner-status');
   var resultBox=document.getElementById('scanner-result');
   var resultContent=document.getElementById('scanner-result-content');
+  _pendingScannedFood=food;
+  if(status)status.textContent='✅ '+food.name;
+  if(resultContent)resultContent.innerHTML=
+    '<div style="font-size:13px;font-weight:700;margin-bottom:6px">'+esc(food.name)+'</div>'
+    +'<div style="font-size:11px;color:#555;margin-bottom:12px">'+food.kcal+' kcal · '+food.prot+'g P · '+food.carbs+'g G · '+food.fat+'g L</div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button onclick="addScannedFood()" style="flex:1;background:#ff4c00;border:none;border-radius:4px;color:#fff;font-weight:900;padding:12px;font-size:13px;cursor:pointer">+ Ajouter au repas</button>'
+    +'<button onclick="closeScanner()" style="background:none;border:1px solid #333;border-radius:4px;color:#888;padding:12px 16px;cursor:pointer">✕</button>'
+    +'</div>';
+  if(resultBox)resultBox.classList.add('show');
+}
+
+function fetchOFF(barcode){
+  var status=document.getElementById('scanner-status');
   if(status)status.textContent='🔍 Recherche du produit...';
-  var url='https://world.openfoodfacts.org/api/v0/product/'+encodeURIComponent(barcode)+'.json?fields=product_name,product_name_fr,nutriments,brands';
-  fetch(url)
-    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
-    .then(function(data){
-      if(data.status!==1||!data.product){
-        if(status)status.textContent='❌ Produit non trouvé ('+barcode+')';
-        return;
+
+  // 1. Chercher d'abord dans Supabase (base locale)
+  var SUPA_URL='https://ogkrgsnnoebsvbgsngvm.supabase.co';
+  var SUPA_KEY='sb_publishable_KvM3k3gwBAArOFyUEd1a7A_oY0RTIom';
+  fetch(SUPA_URL+'/rest/v1/aliments?barcode=eq.'+encodeURIComponent(barcode)+'&select=name_fr,kcal,prot,carbs,fat&limit=1',{
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
+  }).then(function(r){return r.json();}).then(function(data){
+    if(data&&data.length>0){
+      var p=data[0];
+      _showScanResult({id:90000+Date.now()%999999,name:p.name_fr,cat:'Base',kcal:Math.round(p.kcal),prot:parseFloat((p.prot||0).toFixed(1)),carbs:parseFloat((p.carbs||0).toFixed(1)),fat:parseFloat((p.fat||0).toFixed(1))});
+      return;
+    }
+    // 2. Fallback OpenFoodFacts
+    var url='https://world.openfoodfacts.org/api/v0/product/'+encodeURIComponent(barcode)+'.json?fields=product_name,product_name_fr,nutriments';
+    fetch(url).then(function(r){return r.json();}).then(function(d){
+      if(d.status!==1||!d.product){
+        if(status)status.textContent='❌ Produit non trouvé';return;
       }
-      var p=data.product;
-      var n=p.nutriments||{};
+      var p=d.product;var n=p.nutriments||{};
       var name=(p.product_name_fr||p.product_name||'Produit inconnu').substring(0,60);
       var kcal=Math.round(n['energy-kcal_100g']||0);
       var prot=parseFloat((n.proteins_100g||0).toFixed(1));
       var carbs=parseFloat((n.carbohydrates_100g||0).toFixed(1));
       var fat=parseFloat((n.fat_100g||0).toFixed(1));
-      if(!kcal){if(status)status.textContent='⚠️ Produit sans données nutritionnelles';return;}
-      // Stockage global pour éviter les apostrophes dans onclick
-      _pendingScannedFood={id:90000+Date.now()%999999,name:name,cat:'En ligne',kcal:kcal,prot:prot,carbs:carbs,fat:fat};
-      if(status)status.textContent='✅ '+name;
-      if(resultContent)resultContent.innerHTML=
-        '<div style="font-size:13px;font-weight:700;margin-bottom:6px">'+esc(name)+'</div>'
-        +'<div style="font-size:11px;color:#555;margin-bottom:12px">'+kcal+' kcal · '+prot+'g P · '+carbs+'g G · '+fat+'g L</div>'
-        +'<div style="display:flex;gap:8px">'
-        +'<button onclick="addScannedFood()" style="flex:1;background:#ff4c00;border:none;border-radius:4px;color:#fff;font-weight:900;padding:12px;font-size:13px;cursor:pointer">+ Ajouter au repas</button>'
-        +'<button onclick="closeScanner()" style="background:none;border:1px solid #333;border-radius:4px;color:#888;padding:12px 16px;cursor:pointer">✕</button>'
-        +'</div>';
-      if(resultBox)resultBox.classList.add('show');
-    })
-    .catch(function(err){
-      if(status)status.textContent='❌ Erreur réseau';
-      console.error('fetchOFF error:',err);
-    });
+      if(!kcal){if(status)status.textContent='⚠️ Données nutritionnelles manquantes';return;}
+      _showScanResult({id:90000+Date.now()%999999,name:name,cat:'En ligne',kcal:kcal,prot:prot,carbs:carbs,fat:fat});
+    }).catch(function(){if(status)status.textContent='❌ Produit introuvable';});
+  }).catch(function(){if(status)status.textContent='❌ Erreur réseau';});
 }
 
 function addScannedFood(){
