@@ -877,7 +877,7 @@ function fetchOFF(barcode){
     if(status)status.textContent='🌐 Recherche en ligne...';
     var url='/api/barcode?code='+encodeURIComponent(barcode);
     fetch(url).then(function(r){return r.json();}).then(function(d){
-      if(!d.product){
+      if(!d.product||d.status===0){
         if(status)status.textContent='❌ Produit non trouvé';
         // Proposer d'ajouter à la base commune
         var resultBox=document.getElementById('scanner-result');
