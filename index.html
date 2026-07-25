@@ -877,7 +877,7 @@ function fetchOFF(barcode){
     if(status)status.textContent='🌐 Recherche en ligne...';
     var url='/api/barcode?code='+encodeURIComponent(barcode);
     fetch(url).then(function(r){return r.json();}).then(function(d){
-      if(d.status!==1||!d.product){
+      if(!d.product){
         if(status)status.textContent='❌ Produit non trouvé ('+barcode+')';return;
       }
       var p=d.product;var n=p.nutriments||{};
