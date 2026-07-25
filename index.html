@@ -878,7 +878,24 @@ function fetchOFF(barcode){
     var url='/api/barcode?code='+encodeURIComponent(barcode);
     fetch(url).then(function(r){return r.json();}).then(function(d){
       if(!d.product){
-        if(status)status.textContent='❌ Produit non trouvé ('+barcode+')';return;
+        if(status)status.textContent='❌ Produit non trouvé';
+        // Proposer d'ajouter à la base commune
+        var resultBox=document.getElementById('scanner-result');
+        var resultContent=document.getElementById('scanner-result-content');
+        _pendingBarcode=barcode;
+        if(resultContent)resultContent.innerHTML=
+          '<div style="font-size:13px;font-weight:700;margin-bottom:6px;color:#e74c3c">Produit non trouvé</div>'
+          +'<div style="font-size:11px;color:#555;margin-bottom:10px">Code: '+barcode+'</div>'
+          +'<input id="scan-add-name" placeholder="Nom du produit" class="inp" style="margin-bottom:6px"/>'
+          +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">'
+          +'<input id="scan-add-kcal" placeholder="Kcal" type="number" class="inp"/>'
+          +'<input id="scan-add-prot" placeholder="Protéines g" type="number" class="inp"/>'
+          +'<input id="scan-add-carbs" placeholder="Glucides g" type="number" class="inp"/>'
+          +'<input id="scan-add-fat" placeholder="Lipides g" type="number" class="inp"/>'
+          +'</div>'
+          +'<button onclick="addToCommonDB()" style="width:100%;background:#2ecc71;color:#000;border:none;border-radius:4px;font-weight:900;padding:12px;font-size:13px;cursor:pointer">➕ Ajouter à la base commune</button>';
+        if(resultBox)resultBox.classList.add('show');
+        return;
       }
       var p=d.product;var n=p.nutriments||{};
       var name=(p.product_name_fr||p.product_name||'Produit inconnu').substring(0,60);
@@ -890,6 +907,30 @@ function fetchOFF(barcode){
       _showScanResult({id:90000+Date.now()%999999,name:name,cat:'En ligne',kcal:kcal,prot:prot,carbs:carbs,fat:fat});
     }).catch(function(){if(status)status.textContent='❌ Produit introuvable';});
   }).catch(function(){if(status)status.textContent='❌ Erreur réseau';});
+}
+
+var _pendingBarcode=null;
+
+async function addToCommonDB(){
+  var name=document.getElementById('scan-add-name').value.trim();
+  var kcal=parseFloat(document.getElementById('scan-add-kcal').value)||0;
+  var prot=parseFloat(document.getElementById('scan-add-prot').value)||0;
+  var carbs=parseFloat(document.getElementById('scan-add-carbs').value)||0;
+  var fat=parseFloat(document.getElementById('scan-add-fat').value)||0;
+  if(!name){toast('Entre le nom du produit','#e74c3c');return;}
+  if(!kcal){toast('Entre les calories','#e74c3c');return;}
+  // Sauvegarder dans Supabase base commune
+  if(supabase){
+    var slug=name.toLowerCase().replace(/[^a-z0-9]/g,'_').substring(0,40)+'_'+Date.now()%9999;
+    await supabase.from('aliments').insert({
+      name:slug,name_fr:name,kcal:kcal,prot:prot,carbs:carbs,fat:fat,
+      fibres:0,cat:'user',source:'user',barcode:_pendingBarcode
+    });
+  }
+  // Ajouter au repas
+  _pendingScannedFood={id:90000+Date.now()%999999,name:name,cat:'User',kcal:kcal,prot:prot,carbs:carbs,fat:fat};
+  addScannedFood();
+  toast('✅ Ajouté à la base commune !','#2ecc71');
 }
 
 function addScannedFood(){
