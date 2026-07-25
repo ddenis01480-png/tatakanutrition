@@ -801,27 +801,44 @@ function startHtml5Qr(){
   viewport.innerHTML='<div id="qr-reader" style="width:100%;height:100%"></div>';
 
   html5QrScanner=new Html5Qrcode('qr-reader');
-  html5QrScanner.start(
-    {facingMode:'environment'},
-    {
-      fps:10,
-      qrbox:{width:250,height:250},
-      aspectRatio:1.0,
-      disableFlip:false
-    },
-    function(decodedText){
-      if(decodedText===lastScannedCode)return;
-      lastScannedCode=decodedText;
-      document.getElementById('scanner-status').textContent='✅ Code détecté';
-      fetchOFF(decodedText);
-    },
-    function(){}  // erreurs silencieuses (NotFoundException normal)
-  ).then(function(){
+
+  var config={fps:10,qrbox:{width:250,height:250},disableFlip:false};
+
+  function onSuccess(decodedText){
+    if(decodedText===lastScannedCode)return;
+    lastScannedCode=decodedText;
+    document.getElementById('scanner-status').textContent='✅ Code détecté';
+    fetchOFF(decodedText);
+  }
+  function onError(){}
+
+  // Essai avec caméra arrière, fallback sur caméra disponible (iOS)
+  html5QrScanner.start({facingMode:'environment'},config,onSuccess,onError)
+  .then(function(){
     scannerActive=true;
     document.getElementById('scanner-status').textContent='📷 Pointez sur un code-barres';
-  }).catch(function(err){
-    document.getElementById('scanner-status').textContent='❌ '+(err||'Caméra non disponible');
-    console.error('Scanner error:',err);
+  }).catch(function(){
+    // Fallback: laisser Html5Qrcode choisir la caméra disponible
+    Html5Qrcode.getCameras().then(function(cameras){
+      if(!cameras||cameras.length===0){
+        document.getElementById('scanner-status').textContent='❌ Aucune caméra détectée';
+        return;
+      }
+      // Préférer caméra arrière (back) sinon prendre la première
+      var cam=cameras.find(function(c){return c.label&&(c.label.toLowerCase().includes('back')||c.label.toLowerCase().includes('arrière')||c.label.toLowerCase().includes('rear'));});
+      if(!cam)cam=cameras[cameras.length-1]; // dernière = souvent arrière sur iOS
+      html5QrScanner.start(cam.id,config,onSuccess,onError)
+      .then(function(){
+        scannerActive=true;
+        document.getElementById('scanner-status').textContent='📷 Pointez sur un code-barres';
+      }).catch(function(err){
+        document.getElementById('scanner-status').textContent='❌ Caméra non disponible';
+        console.error('Scanner iOS fallback error:',err);
+      });
+    }).catch(function(err){
+      document.getElementById('scanner-status').textContent='❌ Accès caméra refusé';
+      console.error('getCameras error:',err);
+    });
   });
 }
 
