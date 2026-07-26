@@ -93,6 +93,19 @@ label{font-size:11px;color:#444;letter-spacing:.06em;display:block;margin-bottom
 </head>
 <body>
 
+<!-- CROSS PROMO -->
+<div id="cross-promo" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:1500;background:#111;border:1px solid #2ecc7144;border-radius:10px;padding:10px 14px;max-width:320px;width:90%;box-shadow:0 4px 20px rgba(0,0,0,0.5)">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+    <div style="font-size:11px;color:#aaa;line-height:1.5">
+      Découvrez aussi<br>
+      <a href="https://tatankatraining.vercel.app" target="_blank" style="color:#2ecc71;font-weight:700;text-decoration:none">🏋️ Tatanka Training</a>
+      &nbsp;·&nbsp;
+      <a href="https://bodytrackv2.netlify.app" target="_blank" style="color:#2ecc71;font-weight:700;text-decoration:none">📊 Tatanka Progress</a>
+    </div>
+    <button onclick="document.getElementById('cross-promo').style.display='none';localStorage.setItem('cp_nutrition','1')" style="background:none;border:none;color:#444;font-size:18px;cursor:pointer;padding:0;line-height:1;flex-shrink:0">×</button>
+  </div>
+</div>
+
 <!-- AUTH SCREEN -->
 <div id="auth-screen" style="display:none;position:fixed;inset:0;background:#080809;z-index:2000;flex-direction:column;align-items:center;justify-content:center;padding:24px">
   <div style="width:100%;max-width:380px">
@@ -553,6 +566,13 @@ function initApp(){
         }
         // Auth Supabase en arrière-plan — JAMAIS bloquant
         setTimeout(initSupabase, 100);
+        // Cross-promo — afficher une fois
+        if(!localStorage.getItem('cp_nutrition')){
+          setTimeout(function(){
+            var cp=document.getElementById('cross-promo');
+            if(cp)cp.style.display='block';
+          }, 3000);
+        }
       },420);
     } else {
       try{render();}catch(e){console.error(e);}
