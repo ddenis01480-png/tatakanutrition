@@ -1,4 +1,4 @@
-const CACHE='tatanka-v79';
+const CACHE='tatanka-v80';
 const ASSETS=[
   '/hero.jpg',
   'https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js'
