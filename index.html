@@ -725,15 +725,6 @@ async function _activatePremium(){
 
 function fillPremiumZone(){
   // Injecter boutons dans la bannière premium du profil si visible
-  var cta=document.getElementById('premium-cta-profil');
-  if(cta&&!isPremium()){
-    var box2=document.createElement('div');
-    box2.style.cssText='display:flex;gap:8px';
-    box2.innerHTML='<button id="cta2-monthly" style="flex:1;background:#9b59b6;color:#fff;border:none;border-radius:6px;padding:10px 6px;font-weight:900;font-size:12px;cursor:pointer">4,99€/mois</button><button id="cta2-yearly" style="flex:1;background:#6c3483;color:#fff;border:none;border-radius:6px;padding:10px 6px;font-weight:900;font-size:12px;cursor:pointer">39,99€/an</button>';
-    cta.appendChild(box2);
-    document.getElementById('cta2-monthly').addEventListener('click',function(){startCheckout('monthly');});
-    document.getElementById('cta2-yearly').addEventListener('click',function(){startCheckout('yearly');});
-  }
   var cta=document.getElementById('premium-cta');
   if(cta&&!isPremium()){
     cta.innerHTML='';
@@ -2313,13 +2304,6 @@ function renderP(){
         </div>`).join('')}
       </div>
     </div>`;
-    } else {
-      html+=`<div class="card" style="border:1px solid #9b59b633;background:#0d0010;text-align:center;padding:24px">
-        <div style="font-size:32px;margin-bottom:8px">👑</div>
-        <div style="font-size:14px;font-weight:900;color:#9b59b6;margin-bottom:8px">FEATURE PREMIUM</div>
-        <div style="font-size:11px;color:#555;line-height:1.7;margin-bottom:16px">Macros adaptées automatiquement selon ton planning :<br>🔥 Jour training vs ❄️ Jour repos.<br>Glucides cycliques et récap hebdo.</div>
-        <div id="premium-cta-profil"></div>
-      </div>`;
     } // fin isPremium
   }
   return html;
