@@ -637,7 +637,7 @@ function _hideAuth(){
 function isPremium(){
   if(!userProfile)return false;
   if(userProfile.blocked)return false;
-  return userProfile.premium||userProfile.lifetime;
+  return userProfile.premium_nutrition||userProfile.pack||userProfile.lifetime;
 }
 function switchAuthTab(mode){
   _authMode=mode;
@@ -695,8 +695,8 @@ async function _loadProfileDB(userId,email){
   if(!supabase)return;
   var r=await supabase.from('profiles').select('*').eq('id',userId).single();
   if(!r.data){
-    await supabase.from('profiles').insert({id:userId,email:email,premium:false,lifetime:false,blocked:false});
-    userProfile={premium:false,lifetime:false,blocked:false};
+    await supabase.from('profiles').insert({id:userId,email:email,premium:false,lifetime:false,blocked:false,premium_nutrition:false,pack:false});
+    userProfile={premium:false,lifetime:false,blocked:false,premium_nutrition:false,pack:false};
   } else { userProfile=r.data; }
 }
 async function doSignOut(){
@@ -735,8 +735,8 @@ function startCheckout(plan){
 
 async function _activatePremium(){
   if(!supabase||!currentUser)return;
-  await supabase.from('profiles').update({premium:true}).eq('id',currentUser.id);
-  if(userProfile)userProfile.premium=true;
+  await supabase.from('profiles').update({premium_nutrition:true}).eq('id',currentUser.id);
+  if(userProfile)userProfile.premium_nutrition=true;
   // Nettoyer l'URL
   window.history.replaceState({},'',window.location.pathname);
   toast('👑 Premium activé ! Bienvenue !','#2ecc71');
