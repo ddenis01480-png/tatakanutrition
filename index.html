@@ -724,6 +724,8 @@ var PRICE_YEARLY='price_1Tni5YPCt6A1TSgNdgLmX83u';
 
 var PAYMENT_LINK_MONTHLY='https://buy.stripe.com/test_4gM6oJ2uWgjaghBflGcQU00';
 var PAYMENT_LINK_YEARLY='https://buy.stripe.com/test_8x214pc5w9UMe9t8XicQU01';
+var PACK_LINK_MONTHLY='https://buy.stripe.com/test_aFa3cxglMgja9TdddycQU07';
+var PACK_LINK_YEARLY='https://buy.stripe.com/test_aFafZj5H81og5CX8XicQU08';
 
 function startCheckout(plan){
   if(!currentUser){ toast('Connecte-toi d abord','#e74c3c'); return; }
@@ -732,6 +734,14 @@ function startCheckout(plan){
   url+='?prefilled_email='+encodeURIComponent(currentUser.email)+'&client_reference_id='+currentUser.id;
   window.location.href=url;
 }
+
+function startPackCheckout(plan){
+  if(!currentUser){ toast('Connecte-toi d abord','#e74c3c'); return; }
+  var url=plan==='monthly'?PACK_LINK_MONTHLY:PACK_LINK_YEARLY;
+  url+='?prefilled_email='+encodeURIComponent(currentUser.email)+'&client_reference_id='+currentUser.id;
+  window.location.href=url;
+}
+window.startPackCheckout=startPackCheckout;
 
 async function _activatePremium(){
   if(!supabase||!currentUser)return;
@@ -767,11 +777,13 @@ function fillPremiumZone(){
   var box=document.createElement('div');
   box.className='card';
   box.style.cssText='border:1px solid #2ecc7133;background:#060e06;margin-bottom:10px';
-  box.innerHTML='<div style="text-align:center;margin-bottom:12px"><div style="font-size:24px">👑</div><div style="font-size:14px;font-weight:900;color:#2ecc71">PASSER PREMIUM</div></div><div style="display:flex;gap:8px"><button id="btn-monthly" style="flex:1;background:#2ecc71;color:#000;border:none;border-radius:6px;padding:10px 6px;font-weight:900;font-size:12px;cursor:pointer">4,99€/mois</button><button id="btn-yearly" style="flex:1;background:#1a6e3e;color:#2ecc71;border:1px solid #2ecc71;border-radius:6px;padding:10px 6px;font-weight:900;font-size:12px;cursor:pointer">39,99€/an</button></div>';
+  box.innerHTML='<div style="text-align:center;margin-bottom:12px"><div style="font-size:24px">👑</div><div style="font-size:14px;font-weight:900;color:#2ecc71">PASSER PREMIUM</div></div><div style="display:flex;gap:8px;margin-bottom:14px"><button id="btn-monthly" style="flex:1;background:#2ecc71;color:#000;border:none;border-radius:6px;padding:10px 6px;font-weight:900;font-size:12px;cursor:pointer">4,99€/mois</button><button id="btn-yearly" style="flex:1;background:#1a6e3e;color:#2ecc71;border:1px solid #2ecc71;border-radius:6px;padding:10px 6px;font-weight:900;font-size:12px;cursor:pointer">39,99€/an</button></div><div style="border-top:1px solid #2ecc7122;padding-top:12px;text-align:center"><div style="font-size:11px;color:#888;margin-bottom:8px">Ou débloque les 3 apps Tatanka (Nutrition + Training + Progress) :</div><div style="display:flex;gap:8px"><button id="btn-pack-monthly" style="flex:1;background:#ff4c00;color:#fff;border:none;border-radius:6px;padding:10px 6px;font-weight:900;font-size:12px;cursor:pointer">Pack 9,99€/mois</button><button id="btn-pack-yearly" style="flex:1;background:#992e00;color:#fff;border:none;border-radius:6px;padding:10px 6px;font-weight:900;font-size:12px;cursor:pointer">Pack 79,99€/an</button></div></div>';
   zone.innerHTML='';
   zone.appendChild(box);
   document.getElementById('btn-monthly').addEventListener('click',function(){startCheckout('monthly');});
   document.getElementById('btn-yearly').addEventListener('click',function(){startCheckout('yearly');});
+  document.getElementById('btn-pack-monthly').addEventListener('click',function(){startPackCheckout('monthly');});
+  document.getElementById('btn-pack-yearly').addEventListener('click',function(){startPackCheckout('yearly');});
 }
 
 function showOnboarding(){
