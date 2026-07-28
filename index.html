@@ -735,11 +735,14 @@ function startCheckout(plan){
 
 async function _activatePremium(){
   if(!supabase||!currentUser)return;
-  await supabase.from('profiles').update({premium_nutrition:true}).eq('id',currentUser.id);
-  if(userProfile)userProfile.premium_nutrition=true;
+  var isPack=window.location.search.indexOf('plan=pack')>=0;
+  var field=isPack?'pack':'premium_nutrition';
+  var upd={};upd[field]=true;
+  await supabase.from('profiles').update(upd).eq('id',currentUser.id);
+  if(userProfile)userProfile[field]=true;
   // Nettoyer l'URL
   window.history.replaceState({},'',window.location.pathname);
-  toast('👑 Premium activé ! Bienvenue !','#2ecc71');
+  toast(isPack?'👑 Pack Tatanka activé ! Les 3 apps sont débloquées.':'👑 Premium activé ! Bienvenue !','#2ecc71');
   render();
 }
 
