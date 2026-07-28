@@ -757,6 +757,7 @@ async function _activatePremium(){
 }
 
 function fillPremiumZone(){
+  var hasPack=!!(userProfile&&userProfile.pack);
   // Injecter boutons dans la bannière premium du profil si visible
   var cta=document.getElementById('premium-cta');
   if(cta&&!isPremium()){
@@ -770,10 +771,25 @@ function fillPremiumZone(){
   }
   var zone=document.getElementById('premium-zone');
   if(!zone)return;
-  if(isPremium()){
-    zone.innerHTML='<div style="text-align:center;padding:10px;margin-bottom:8px;font-size:11px;color:#2ecc71;font-weight:700">👑 PREMIUM ACTIF</div>';
+
+  if(hasPack){
+    zone.innerHTML='<div style="text-align:center;padding:10px;margin-bottom:8px;font-size:11px;color:#ff4c00;font-weight:700">👑 PACK TATANKA ACTIF — les 3 apps sont débloquées</div>';
     return;
   }
+
+  if(isPremium()){
+    // Premium sur cette app uniquement : on propose quand même le Pack pour débloquer les 2 autres
+    var box2=document.createElement('div');
+    box2.className='card';
+    box2.style.cssText='border:1px solid #2ecc7133;background:#060e06;margin-bottom:10px';
+    box2.innerHTML='<div style="text-align:center;padding:10px 0 12px 0;font-size:11px;color:#2ecc71;font-weight:700">👑 PREMIUM ACTIF SUR CETTE APP</div><div style="border-top:1px solid #2ecc7122;padding-top:12px;text-align:center"><div style="font-size:11px;color:#888;margin-bottom:8px">Débloque aussi Training + Progress avec le Pack :</div><div style="display:flex;gap:8px"><button id="btn-pack-monthly" style="flex:1;background:#ff4c00;color:#fff;border:none;border-radius:6px;padding:10px 6px;font-weight:900;font-size:12px;cursor:pointer">Pack 9,99€/mois</button><button id="btn-pack-yearly" style="flex:1;background:#992e00;color:#fff;border:none;border-radius:6px;padding:10px 6px;font-weight:900;font-size:12px;cursor:pointer">Pack 79,99€/an</button></div></div>';
+    zone.innerHTML='';
+    zone.appendChild(box2);
+    document.getElementById('btn-pack-monthly').addEventListener('click',function(){startPackCheckout('monthly');});
+    document.getElementById('btn-pack-yearly').addEventListener('click',function(){startPackCheckout('yearly');});
+    return;
+  }
+
   var box=document.createElement('div');
   box.className='card';
   box.style.cssText='border:1px solid #2ecc7133;background:#060e06;margin-bottom:10px';
