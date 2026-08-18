@@ -2041,8 +2041,8 @@ function renderH(){
         </div>
       </div>
       <div style="background:#0a1a0a;border:1px solid #1a3a1a;border-radius:4px;padding:10px;font-size:12px;line-height:1.7">
-        ${dPoids<0&&dGras<0?`✅ <span style="color:#2ecc71;font-weight:700">${pctGrasPert}% de la perte = masse grasse</span>${pctGrasPert>=80?' — excellente sèche !':pctGrasPert>=60?' — bonne sèche':' — attention à la masse maigre'}`:
-        dPoids<0&&dLean<0?`⚠️ <span style="color:#ff8800;font-weight:700">Perte musculaire détectée</span> — revoir le déficit et les protéines`:
+        ${dPoids<0&&dLean<0?`⚠️ <span style="color:#ff8800;font-weight:700">Perte musculaire détectée</span> — revoir le déficit et les protéines`:
+        dPoids<0&&dGras<0?`✅ <span style="color:#2ecc71;font-weight:700">${pctGrasPert}% de la perte = masse grasse</span>${pctGrasPert>=80?' — excellente sèche !':pctGrasPert>=60?' — bonne sèche':' — attention à la masse maigre'}`:
         '📊 Continuez à loguer pour obtenir une analyse complète'}
         ${lean1&&lean0?`<br><span style="color:#555">Masse maigre : ${lean0}kg → ${lean1}kg</span>`:''}
       </div>
