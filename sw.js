@@ -1,5 +1,7 @@
-const CACHE='tatanka-v81';
+const CACHE='tatanka-v82';
 const ASSETS=[
+  '/',
+  '/index.html',
   '/hero.jpg',
   'https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js'
 ];
@@ -21,10 +23,16 @@ self.addEventListener('activate',e=>{
 self.addEventListener('fetch',e=>{
   const url=new URL(e.request.url);
 
-  // index.html — toujours réseau, jamais cache
+  // index.html — réseau en priorité, mis en cache à chaque succès, servi depuis le cache hors-ligne
   if(url.pathname==='/'||url.pathname==='/index.html'){
     e.respondWith(
-      fetch(e.request).catch(()=>caches.match('/index.html'))
+      fetch(e.request).then(response=>{
+        if(response.ok){
+          const clone=response.clone();
+          caches.open(CACHE).then(c=>c.put('/index.html',clone));
+        }
+        return response;
+      }).catch(()=>caches.match('/index.html'))
     );
     return;
   }
