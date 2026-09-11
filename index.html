@@ -2230,10 +2230,10 @@ function renderP(){
       <div><label>Poids (kg)</label><input class="inp" id="pp" type="number" inputmode="decimal" value="${esc(String(p.poids))}" placeholder="80"></div>
       <div><label>Taille (cm)</label><input class="inp" id="pt" type="number" inputmode="decimal" value="${esc(String(p.taille))}" placeholder="178"></div>
       <div><label>Âge</label><input class="inp" id="pa" type="number" inputmode="numeric" value="${esc(String(p.age))}" placeholder="30"></div>
-      <div><label>Genre</label><select class="sel" id="pg"><option value="homme" ${p.genre==='homme'?'selected':''}>Homme</option><option value="femme" ${p.genre==='femme'?'selected':''}>Femme</option></select></div>
+      <div><label>Genre</label><select class="sel" id="pg" onchange="saveP()"><option value="homme" ${p.genre==='homme'?'selected':''}>Homme</option><option value="femme" ${p.genre==='femme'?'selected':''}>Femme</option></select></div>
     </div>
     <div style="margin-bottom:10px"><label>Activité</label>
-      <select class="sel" id="pac">
+      <select class="sel" id="pac" onchange="saveP()">
         <option value="sed" ${p.activite==='sed'?'selected':''}>Sédentaire (×1.2)</option>
         <option value="light" ${p.activite==='light'?'selected':''}>Légère (×1.375)</option>
         <option value="mod" ${p.activite==='mod'?'selected':''}>Modérée (×1.55)</option>
